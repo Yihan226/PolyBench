@@ -302,6 +302,12 @@
         color,
         `${topic.name}: ${topic.percentOfTotal.toFixed(2)}%`,
         "donut-segment inner-segment",
+        {
+          segment: "topic",
+          topic: topic.name,
+          count: topic.count,
+          percent: topic.percentOfTotal.toFixed(2),
+        },
       );
 
       let subStart = topicStart;
@@ -328,6 +334,7 @@
           `${topic.name} / ${subtopic.name}: ${percent}%`,
           "donut-segment outer-segment",
           {
+            segment: "subtopic",
             topic: topic.name,
             subtopic: subtopic.name,
             count: subtopic.count,
@@ -384,7 +391,7 @@
     const dataAttrs = Object.entries(data)
       .map(([key, value]) => `data-${key}="${escapeHtml(value)}"`)
       .join(" ");
-    const interactiveAttrs = className.includes("outer-segment")
+    const interactiveAttrs = data.topic
       ? `role="button" tabindex="0" aria-label="${escapeHtml(label)}"`
       : "";
     return `<path class="${escapeHtml(className)}" d="${d}" fill="${fill}" stroke="rgba(255,252,246,0.86)" stroke-width="1.5" ${interactiveAttrs} ${dataAttrs}><title>${escapeHtml(label)}</title></path>`;
@@ -395,22 +402,33 @@
     if (!popover) return;
 
     const show = (segment) => {
-      $$(".outer-segment.active", chart).forEach((item) => item.classList.remove("active"));
+      $$(".donut-segment.active", chart).forEach((item) => item.classList.remove("active"));
       segment.classList.add("active");
       const percentWithinTopic = segment.dataset.within || "";
+      const isTopic = segment.dataset.segment === "topic";
       popover.hidden = false;
-      popover.innerHTML = `
-        <span>${escapeHtml(segment.dataset.topic || "")}</span>
-        <strong>${escapeHtml(segment.dataset.subtopic || "")}</strong>
-        <small>${formatNumber(Number(segment.dataset.count || 0))} items · ${escapeHtml(segment.dataset.percent || "0.00")}% of all questions${
-          percentWithinTopic
-            ? ` · ${escapeHtml(percentWithinTopic)}% within topic`
-            : ""
-        }</small>
-      `;
+      if (isTopic) {
+        popover.innerHTML = `
+          <span class="popover-kicker">Main topic</span>
+          <span class="popover-label">${escapeHtml(segment.dataset.topic || "")}</span>
+          <small>${formatNumber(Number(segment.dataset.count || 0))} items · ${escapeHtml(
+            segment.dataset.percent || "0.00",
+          )}% of all questions</small>
+        `;
+      } else {
+        popover.innerHTML = `
+          <span class="popover-kicker">${escapeHtml(segment.dataset.topic || "")}</span>
+          <span class="popover-label">${escapeHtml(segment.dataset.subtopic || "")}</span>
+          <small>${formatNumber(Number(segment.dataset.count || 0))} items · ${escapeHtml(segment.dataset.percent || "0.00")}% of all questions${
+            percentWithinTopic
+              ? ` · ${escapeHtml(percentWithinTopic)}% within topic`
+              : ""
+          }</small>
+        `;
+      }
     };
 
-    $$(".outer-segment", chart).forEach((segment) => {
+    $$(".donut-segment[data-topic]", chart).forEach((segment) => {
       segment.addEventListener("click", (event) => {
         event.stopPropagation();
         show(segment);
@@ -424,9 +442,9 @@
     });
 
     chart.addEventListener("click", (event) => {
-      if (event.target.closest(".outer-segment")) return;
+      if (event.target.closest(".donut-segment[data-topic]")) return;
       popover.hidden = true;
-      $$(".outer-segment.active", chart).forEach((item) => item.classList.remove("active"));
+      $$(".donut-segment.active", chart).forEach((item) => item.classList.remove("active"));
     });
   }
 
@@ -614,6 +632,9 @@
       button.addEventListener("click", () => {
         state.confidence = Number(button.dataset.confidence);
         $$("#confidenceButtons button").forEach((item) => item.classList.toggle("active", item === button));
+        $(".confidence-row")?.classList.remove("needs-attention");
+        $("#answerKey").hidden = true;
+        updateRevealButton(state);
       });
     });
   }
@@ -746,6 +767,17 @@
       answer = $("#freeAnswer").value.trim();
     }
 
+    if (!answer) {
+      flashButton($("#saveAnswer"), "Add answer");
+      return;
+    }
+
+    if (state.confidence === null) {
+      $(".confidence-row")?.classList.add("needs-attention");
+      flashButton($("#saveAnswer"), "Pick confidence");
+      return;
+    }
+
     const correct =
       question.type === "MCQ" && answer
         ? normalizeAnswer(answer) === normalizeAnswer(question.answer)
@@ -796,16 +828,24 @@
     const question = state.filtered[state.currentIndex];
     if (!question) return false;
     const saved = state.responses[question.id];
-    if (!saved || !saved.answer) return false;
-    return normalizeAnswer(currentAnswerValue(question)) === normalizeAnswer(saved.answer);
+    if (!saved || !saved.answer || saved.confidence === null || saved.confidence === undefined) return false;
+    return (
+      normalizeAnswer(currentAnswerValue(question)) === normalizeAnswer(saved.answer)
+      && Number(state.confidence) === Number(saved.confidence)
+    );
   }
 
   function updateRevealButton(state) {
     const button = $("#revealAnswer");
     if (!button) return;
     const canReveal = canRevealAnswer(state);
+    button.hidden = !canReveal;
     button.disabled = !canReveal;
-    button.title = canReveal ? "" : "Save an answer for this question before revealing the key.";
+    button.title = canReveal ? "" : "Save an answer and confidence score for this question before revealing the key.";
+    if (!canReveal) {
+      const key = $("#answerKey");
+      if (key) key.hidden = true;
+    }
   }
 
   function updateSessionStats(state) {

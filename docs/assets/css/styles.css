@@ -577,10 +577,12 @@ textarea:focus {
   opacity: 0.82;
 }
 
-.outer-segment {
+.donut-segment[data-topic] {
   cursor: pointer;
 }
 
+.inner-segment:focus-visible,
+.inner-segment.active,
 .outer-segment:focus-visible,
 .outer-segment.active {
   outline: none;
@@ -604,28 +606,28 @@ textarea:focus {
 }
 
 .subtopic-popover span,
-.subtopic-popover small,
-.subtopic-popover strong {
+.subtopic-popover small {
   display: block;
 }
 
-.subtopic-popover span {
+.subtopic-popover .popover-kicker {
   color: var(--muted);
   font-size: 0.76rem;
-  font-weight: 800;
+  font-weight: 500;
   text-transform: uppercase;
 }
 
-.subtopic-popover strong {
+.subtopic-popover .popover-label {
   margin-top: 3px;
   color: var(--ink);
+  font-weight: 500;
   line-height: 1.25;
 }
 
 .subtopic-popover small {
   margin-top: 5px;
   color: var(--muted);
-  font-weight: 720;
+  font-weight: 500;
   line-height: 1.35;
 }
 
@@ -669,18 +671,19 @@ textarea:focus {
 .legend-topic {
   min-width: 0;
   color: var(--ink);
-  font-weight: 760;
+  font-weight: 700;
   line-height: 1.2;
 }
 
 .legend-row strong {
+  font-weight: 700;
   text-align: right;
 }
 
 .legend-count {
   color: var(--muted);
   font-size: 0.82rem;
-  font-weight: 720;
+  font-weight: 400;
   text-align: right;
 }
 
@@ -1173,6 +1176,11 @@ code {
   border-color: rgba(185, 139, 120, 0.72);
   background: linear-gradient(135deg, rgba(185, 139, 120, 0.2), rgba(126, 143, 131, 0.14));
   color: #735d52;
+}
+
+.confidence-row.needs-attention .confidence-buttons button {
+  border-color: rgba(185, 139, 120, 0.78);
+  box-shadow: 0 0 0 3px rgba(185, 139, 120, 0.12);
 }
 
 .answer-actions {

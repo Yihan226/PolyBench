@@ -18,7 +18,8 @@ DATA_DIR = ROOT / "data"
 DOCS_DIR = ROOT / "docs"
 OUT_DIR = DOCS_DIR / "assets" / "data"
 OUT_IMAGES_DIR = OUT_DIR / "images"
-EXAMPLE_LIMIT_PER_TYPE = 100
+EXAMPLE_LIMIT_PER_TYPE = 10
+QA_IMAGE_EXAMPLE_COUNT = 5
 AGGREGATE_RESULTS_CSV = DATA_DIR / "textbook" / "runs" / "all_models_answers_v1.csv"
 TOPIC_COUNTS_CSV = ROOT / "results" / "distribution_stats" / "topic_counts.csv"
 TOPIC_SUBTOPIC_COUNTS_CSV = ROOT / "results" / "distribution_stats" / "topic_subtopic_counts.csv"
@@ -386,6 +387,78 @@ def round_robin_sample(questions: list[dict], limit: int) -> list[dict]:
     return selected
 
 
+def example_sort_key(question: dict, prefer_images: bool = False):
+    has_images = bool(question.get("_imageNumbers"))
+    image_rank = not has_images if prefer_images else has_images
+    return (
+        image_rank,
+        question["dataset"],
+        question["subtopic"],
+        question["id"],
+    )
+
+
+def pick_example(candidates: list[dict], selected_ids: set[str], prefer_images: bool = False) -> dict | None:
+    available = [question for question in candidates if question["id"] not in selected_ids]
+    if not available:
+        return None
+    available.sort(key=lambda item: example_sort_key(item, prefer_images))
+    return available[0]
+
+
+def select_topic_examples(
+    questions: list[dict],
+    question_type: str,
+    limit: int = EXAMPLE_LIMIT_PER_TYPE,
+) -> list[dict]:
+    examples = []
+    selected_ids = set()
+    qa_image_target = QA_IMAGE_EXAMPLE_COUNT if question_type == "QA" else 0
+
+    by_topic = {
+        topic: [
+            question
+            for question in questions
+            if question["type"] == question_type and question["topic"] == topic
+        ]
+        for topic in MAIN_TOPICS
+    }
+
+    for topic in MAIN_TOPICS:
+        prefer_images = (
+            question_type == "QA"
+            and sum(1 for item in examples if item.get("_imageNumbers")) < qa_image_target
+        )
+        selected = pick_example(by_topic[topic], selected_ids, prefer_images=prefer_images)
+        if selected is None:
+            continue
+        examples.append(selected)
+        selected_ids.add(selected["id"])
+
+    while len(examples) < limit:
+        image_count = sum(1 for item in examples if item.get("_imageNumbers"))
+        prefer_images = question_type == "QA" and image_count < qa_image_target
+        candidates = [
+            question
+            for topic in MAIN_TOPICS
+            for question in by_topic[topic]
+            if question["id"] not in selected_ids
+        ]
+        if question_type == "QA" and not prefer_images:
+            no_image_candidates = [
+                question for question in candidates if not question.get("_imageNumbers")
+            ]
+            if no_image_candidates:
+                candidates = no_image_candidates
+        selected = pick_example(candidates, selected_ids, prefer_images=prefer_images)
+        if selected is None:
+            break
+        examples.append(selected)
+        selected_ids.add(selected["id"])
+
+    return examples[:limit]
+
+
 def build_example_questions(questions: list[dict]) -> list[dict]:
     if OUT_IMAGES_DIR.exists():
         shutil.rmtree(OUT_IMAGES_DIR)
@@ -393,10 +466,11 @@ def build_example_questions(questions: list[dict]) -> list[dict]:
 
     examples = []
     for question_type in ("MCQ", "QA"):
-        typed = [question for question in questions if question["type"] == question_type]
-        examples.extend(round_robin_sample(typed, EXAMPLE_LIMIT_PER_TYPE))
+        examples.extend(select_topic_examples(questions, question_type))
 
-    examples.sort(key=lambda item: (item["type"], item["dataset"], item["topic"], item["id"]))
+    topic_order = {topic: index for index, topic in enumerate(MAIN_TOPICS)}
+    type_order = {"MCQ": 0, "QA": 1}
+    examples.sort(key=lambda item: (type_order[item["type"]], topic_order.get(item["topic"], 99), item["id"]))
     output_questions = []
     for question in examples:
         public_question = {
@@ -780,9 +854,10 @@ def main() -> None:
         },
         "questionBundle": {
             "mode": "example",
-            "description": "The experts quiz ships with 100 MCQ and 100 QA example questions. Replace the questions array or rerun this generator with another sampling rule for production.",
+            "description": "The experts quiz ships with 10 MCQ and 10 QA example questions. The sampler covers as many main topics as possible and keeps 5 image-bearing QA examples when available.",
             "mcqLimit": EXAMPLE_LIMIT_PER_TYPE,
             "qaLimit": EXAMPLE_LIMIT_PER_TYPE,
+            "qaImageQuestionsTarget": QA_IMAGE_EXAMPLE_COUNT,
             "mcqQuestions": example_mcq,
             "qaQuestions": example_qa,
         },
