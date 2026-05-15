@@ -627,6 +627,11 @@
     $("#revealAnswer")?.addEventListener("click", () => revealCurrentAnswer(state));
     $("#exportAnswers")?.addEventListener("click", () => downloadExport(state));
     $("#copyExport")?.addEventListener("click", () => copyExport(state));
+    $("#closeImageLightbox")?.addEventListener("click", closeImageLightbox);
+    $("#closeImageLightboxButton")?.addEventListener("click", closeImageLightbox);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeImageLightbox();
+    });
 
     $$("#confidenceButtons button").forEach((button) => {
       button.addEventListener("click", () => {
@@ -707,12 +712,40 @@
       .map(
         (image) => `
           <figure>
-            <img src="${escapeHtml(image.src)}" alt="${escapeHtml(image.label)} for ${escapeHtml(question.topic)}" loading="lazy">
+            <button class="image-zoom-button" type="button" data-src="${escapeHtml(image.src)}" data-caption="${escapeHtml(image.label)}">
+              <img src="${escapeHtml(image.src)}" alt="${escapeHtml(image.label)} for ${escapeHtml(question.topic)}" loading="lazy">
+            </button>
             <figcaption>${escapeHtml(image.label)}</figcaption>
           </figure>
         `,
       )
       .join("");
+    $$(".image-zoom-button", container).forEach((button) => {
+      button.addEventListener("click", () => {
+        openImageLightbox(button.dataset.src, button.dataset.caption || "Question image");
+      });
+    });
+  }
+
+  function openImageLightbox(src, caption) {
+    const lightbox = $("#imageLightbox");
+    const image = $("#imageLightboxImg");
+    const label = $("#imageLightboxCaption");
+    if (!lightbox || !image || !label || !src) return;
+    image.src = src;
+    image.alt = caption;
+    label.textContent = caption;
+    lightbox.hidden = false;
+    document.body.classList.add("lightbox-open");
+  }
+
+  function closeImageLightbox() {
+    const lightbox = $("#imageLightbox");
+    const image = $("#imageLightboxImg");
+    if (!lightbox || lightbox.hidden) return;
+    lightbox.hidden = true;
+    if (image) image.src = "";
+    document.body.classList.remove("lightbox-open");
   }
 
   function renderAnswerInput(question, saved, state) {

@@ -9,7 +9,7 @@
       name="description"
       content="A GitHub Pages ready PolyBench expert answering interface."
     >
-    <link rel="stylesheet" href="assets/css/styles.css?v=27">
+    <link rel="stylesheet" href="assets/css/styles.css?v=29">
     <script>
       window.MathJax = {
         tex: { inlineMath: [["$", "$"], ["\\(", "\\)"]] },
@@ -17,8 +17,8 @@
       };
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
-    <script defer src="assets/data/polybench-data.js?v=27"></script>
-    <script defer src="assets/js/app.js?v=27"></script>
+    <script defer src="assets/data/polybench-data.js?v=29"></script>
+    <script defer src="assets/js/app.js?v=29"></script>
   </head>
   <body data-page="experts">
     <header class="site-header">
@@ -138,6 +138,15 @@
         <pre class="export-box" id="exportPreview"></pre>
       </section>
     </main>
+
+    <div class="image-lightbox" id="imageLightbox" hidden>
+      <button class="image-lightbox-backdrop" type="button" id="closeImageLightbox" aria-label="Close enlarged image"></button>
+      <figure>
+        <button class="image-lightbox-close" type="button" id="closeImageLightboxButton" aria-label="Close enlarged image">×</button>
+        <img id="imageLightboxImg" alt="">
+        <figcaption id="imageLightboxCaption"></figcaption>
+      </figure>
+    </div>
 
     <footer class="site-footer">
       <span>Answers are saved in this browser until exported.</span>
