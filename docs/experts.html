@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>PolyBench Expert Review</title>
+    <meta
+      name="description"
+      content="A GitHub Pages ready PolyBench expert answering interface."
+    >
+    <link rel="stylesheet" href="assets/css/styles.css?v=20">
+    <script>
+      window.MathJax = {
+        tex: { inlineMath: [["$", "$"], ["\\(", "\\)"]] },
+        options: { skipHtmlTags: ["script", "noscript", "style", "textarea", "pre"] }
+      };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+    <script defer src="assets/data/polybench-data.js?v=20"></script>
+    <script defer src="assets/js/app.js?v=20"></script>
+  </head>
+  <body data-page="experts">
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="PolyBench results home">
+        <span class="brand-mark" aria-hidden="true">PB</span>
+        <span>PolyBench</span>
+      </a>
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="index.html">Results</a>
+        <a href="#question">Question</a>
+        <a href="#export">Export</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="expert-shell">
+        <aside class="expert-sidebar" aria-label="Expert session controls">
+          <div class="review-title">
+            <p class="eyebrow">Expert benchmark</p>
+            <h1>PolyBench Expert Review</h1>
+            <p class="sample-note" id="quizBundleNote">Example quiz bundle</p>
+          </div>
+
+          <label class="field">
+            <span>Expert ID</span>
+            <input id="expertId" type="text" autocomplete="off" placeholder="anonymous-reviewer">
+          </label>
+
+          <div class="segmented" role="group" aria-label="Question type">
+            <button class="segment active" type="button" data-type-filter="all">All</button>
+            <button class="segment" type="button" data-type-filter="MCQ">MCQ</button>
+            <button class="segment" type="button" data-type-filter="QA">QA</button>
+          </div>
+
+          <label class="field">
+            <span>Topic</span>
+            <select id="topicFilter"></select>
+          </label>
+
+          <div class="progress-card">
+            <div>
+              <span class="muted">Answered</span>
+              <strong id="answeredCount">0</strong>
+            </div>
+            <div>
+              <span class="muted">Score</span>
+              <strong id="mcqScore">0%</strong>
+            </div>
+          </div>
+
+          <div class="sidebar-actions">
+            <button class="button quiet full" type="button" id="shuffleQuestions">Shuffle</button>
+            <button class="button full" type="button" id="resetSession">Reset session</button>
+          </div>
+        </aside>
+
+        <section class="question-workspace" id="question" aria-live="polite">
+          <div class="question-toolbar">
+            <button class="icon-button" type="button" id="prevQuestion" aria-label="Previous question">←</button>
+            <div class="question-position">
+              <span id="questionCounter">Question 1 of 1</span>
+              <div class="progress-track" aria-hidden="true">
+                <span id="questionProgress"></span>
+              </div>
+            </div>
+            <button class="icon-button" type="button" id="nextQuestion" aria-label="Next question">→</button>
+          </div>
+
+          <article class="question-card">
+            <div class="question-meta">
+              <span id="questionType" class="pill">MCQ</span>
+              <span id="questionDataset" class="pill soft"></span>
+              <span id="questionTopic" class="pill warm"></span>
+            </div>
+            <h2 id="questionText"></h2>
+            <div id="questionImages" class="question-images"></div>
+            <div id="optionList" class="option-list"></div>
+            <label class="answer-box" id="freeAnswerWrap">
+              <span>Answer</span>
+              <textarea id="freeAnswer" rows="6" placeholder="Write the expert answer"></textarea>
+            </label>
+          </article>
+
+          <section class="response-panel">
+            <div class="confidence-row">
+              <span>Confidence</span>
+              <div class="confidence-buttons" id="confidenceButtons" role="group" aria-label="Confidence">
+                <button type="button" data-confidence="1">1</button>
+                <button type="button" data-confidence="2">2</button>
+                <button type="button" data-confidence="3">3</button>
+                <button type="button" data-confidence="4">4</button>
+                <button type="button" data-confidence="5">5</button>
+              </div>
+            </div>
+            <label class="answer-box">
+              <span>Notes</span>
+              <textarea id="expertNotes" rows="3" placeholder="Optional reasoning or uncertainty"></textarea>
+            </label>
+            <div class="answer-actions">
+              <button class="button primary" type="button" id="saveAnswer">Save answer</button>
+              <button class="button quiet" type="button" id="revealAnswer" disabled>Reveal key</button>
+              <button class="button" type="button" id="exportAnswers">Export JSON</button>
+            </div>
+            <div class="answer-key" id="answerKey" hidden></div>
+          </section>
+        </section>
+      </section>
+
+      <section class="section-wrap compact-section" id="export">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Local collection</p>
+            <h2>Submission Preview</h2>
+          </div>
+          <button class="button quiet" type="button" id="copyExport">Copy JSON</button>
+        </div>
+        <pre class="export-box" id="exportPreview"></pre>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Answers are saved in this browser until exported.</span>
+      <span id="generatedAt"></span>
+    </footer>
+  </body>
+</html>

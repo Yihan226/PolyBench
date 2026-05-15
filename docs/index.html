@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>PolyBench Results</title>
+    <meta
+      name="description"
+      content="A GitHub Pages ready PolyBench results dashboard for polymer benchmark runs."
+    >
+    <link rel="stylesheet" href="assets/css/styles.css?v=20">
+    <script defer src="assets/data/polybench-data.js?v=20"></script>
+    <script defer src="assets/js/app.js?v=20"></script>
+  </head>
+  <body data-page="results">
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="PolyBench results home">
+        <span class="brand-mark" aria-hidden="true">PB</span>
+        <span>PolyBench</span>
+      </a>
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="#leaderboard">Leaderboard</a>
+        <a href="experts.html">Expert Review</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero hero-results">
+        <div class="hero-copy">
+          <p class="eyebrow">Polymer knowledge and reasoning benchmark</p>
+          <h1>PolyBench Results</h1>
+          <p class="hero-lede">
+            PolyBench is a cutting-edge framework to evaluate the polymer knowledge
+            and reasoning capabilities of large language models (LLMs).
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#leaderboard">View ranking</a>
+            <a class="button quiet" href="experts.html">Open expert tasks</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="metric-band" aria-label="Benchmark summary">
+        <div class="metric-grid" id="summaryMetrics"></div>
+      </section>
+
+      <section class="section-wrap" id="leaderboard">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Model comparison</p>
+            <h2>Leaderboard</h2>
+          </div>
+        </div>
+        <div class="table-shell">
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Model</th>
+                <th>Total Score</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardRows"></tbody>
+          </table>
+        </div>
+        <div class="detail-grid">
+          <section class="analysis-panel">
+            <div class="panel-heading">
+              <h3>Topic Profile</h3>
+              <span>inner topics · outer subtopics</span>
+            </div>
+            <div class="donut-layout">
+              <div id="topicDistributionChart" class="donut-chart" aria-label="Topic and subtopic distribution chart"></div>
+              <div id="topicDistributionLegend" class="donut-legend"></div>
+            </div>
+          </section>
+          <section class="analysis-panel ability-panel">
+            <div class="panel-heading">
+              <h3>Ability Profile</h3>
+              <span id="abilityTotal"></span>
+            </div>
+            <div id="abilityVisualization" class="ability-layout"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>PolyBench static dashboard</span>
+      <span id="generatedAt"></span>
+    </footer>
+  </body>
+</html>
