@@ -128,14 +128,12 @@
 
   function renderTopicDistribution() {
     const chart = $("#topicDistributionChart");
-    const legend = $("#topicDistributionLegend");
     const distribution = DATA.topicDistribution || {};
     const topics = distribution.topics || [];
     const total = distribution.total || topics.reduce((sum, topic) => sum + (topic.count || 0), 0);
-    if (!chart || !legend) return;
+    if (!chart) return;
     if (!topics.length || !total) {
       chart.innerHTML = `<div class="empty-state">No topic distribution data.</div>`;
-      legend.innerHTML = "";
       return;
     }
 
@@ -148,20 +146,6 @@
       <div id="subtopicPopover" class="subtopic-popover" hidden></div>
     `;
     bindSubtopicSegments(chart);
-
-    legend.innerHTML = sortedTopics
-      .map((topic, index) => {
-        const color = topicColor(topic.name, index);
-        return `
-          <div class="legend-row">
-            <span class="legend-swatch" style="background:${color}"></span>
-            <span class="legend-topic">${escapeHtml(topic.name)}</span>
-            <strong>${topic.percentOfTotal.toFixed(2)}%</strong>
-            <span class="legend-count">${formatNumber(topic.count)} items</span>
-          </div>
-        `;
-      })
-      .join("");
   }
 
   function renderAbilityProfile() {
@@ -282,15 +266,19 @@
   }
 
   function buildTopicDonutSvg(topics, total) {
-    const cx = 180;
-    const cy = 180;
+    const width = 760;
+    const height = 460;
+    const cx = 380;
+    const cy = 230;
     let topicStart = 0;
     let innerPaths = "";
     let outerPaths = "";
+    const topicLabels = [];
 
     topics.forEach((topic, topicIndex) => {
       const topicAngle = (topic.count / total) * 360;
       const topicEnd = topicStart + topicAngle;
+      const topicMid = topicStart + topicAngle / 2;
       const color = topicColor(topic.name, topicIndex);
       innerPaths += ringPath(
         cx,
@@ -302,13 +290,15 @@
         color,
         `${topic.name}: ${topic.percentOfTotal.toFixed(2)}%`,
         "donut-segment inner-segment",
-        {
-          segment: "topic",
-          topic: topic.name,
-          count: topic.count,
-          percent: topic.percentOfTotal.toFixed(2),
-        },
       );
+      topicLabels.push({
+        angle: topicMid,
+        centerPoint: polarToCartesian(cx, cy, 80, topicMid),
+        color,
+        count: topic.count,
+        name: topic.name,
+        percent: topic.percentOfTotal.toFixed(2),
+      });
 
       let subStart = topicStart;
       const subtopics = topic.subtopics?.length
@@ -351,16 +341,117 @@
       topicStart = topicEnd;
     });
 
+    const labelLines = buildTopicLabelLines(topicLabels, cx, cy);
+
     return `
-      <svg class="topic-donut-svg" viewBox="0 0 360 360" role="img" aria-label="Topic distribution, with main topics inside and subtopics outside">
+      <svg class="topic-donut-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Topic distribution, with main topics inside and subtopics outside">
         <circle cx="${cx}" cy="${cy}" r="166" fill="rgba(255,252,246,0.72)"></circle>
         ${outerPaths}
         ${innerPaths}
+        ${labelLines}
         <circle cx="${cx}" cy="${cy}" r="46" fill="rgba(255,252,246,0.96)"></circle>
         <text x="${cx}" y="${cy - 4}" text-anchor="middle" class="donut-center-value">${formatNumber(total)}</text>
         <text x="${cx}" y="${cy + 18}" text-anchor="middle" class="donut-center-label">questions</text>
       </svg>
     `;
+  }
+
+  function buildTopicLabelLines(labels, cx, cy) {
+    const sides = { left: [], right: [] };
+    labels.forEach((label) => {
+      const side = label.centerPoint.x >= cx ? "right" : "left";
+      sides[side].push({
+        ...label,
+        side,
+        rawY: label.centerPoint.y,
+      });
+    });
+
+    const adjusted = ["left", "right"].flatMap((side) => adjustTopicLabelSide(sides[side], side));
+    return adjusted
+      .map((label) => {
+        const isRight = label.side === "right";
+        const stemStart = label.centerPoint;
+        const textX = topicLabelX(label.side, label.y, cx, cy);
+        const lineEndX = isRight ? textX - 10 : textX + 10;
+        const anchor = isRight ? "start" : "end";
+        const path = `M ${stemStart.x} ${stemStart.y} L ${lineEndX} ${label.y}`;
+        return `
+          <g class="topic-callout">
+            <path class="topic-callout-line" d="${path}" stroke="${label.color}"></path>
+            <circle class="topic-callout-dot" cx="${stemStart.x}" cy="${stemStart.y}" r="4.8" fill="${label.color}"></circle>
+            ${topicCalloutText(label, textX, label.y, anchor)}
+          </g>
+        `;
+      })
+      .join("");
+  }
+
+  function adjustTopicLabelSide(labels, side) {
+    const sorted = labels.slice().sort((a, b) => a.rawY - b.rawY);
+    const minY = side === "left" ? 128 : 132;
+    const maxY = side === "left" ? 394 : 354;
+    const gap = side === "left" ? 40 : 62;
+    sorted.forEach((label, index) => {
+      const previous = sorted[index - 1];
+      label.y = clamp(label.rawY, minY, maxY);
+      if (previous) label.y = Math.max(label.y, previous.y + gap);
+    });
+    const overflow = sorted.length ? sorted[sorted.length - 1].y - maxY : 0;
+    if (overflow > 0) {
+      for (let index = sorted.length - 1; index >= 0; index -= 1) {
+        const next = sorted[index + 1];
+        sorted[index].y = Math.max(
+          minY + index * gap,
+          next ? Math.min(sorted[index].y - overflow, next.y - gap) : sorted[index].y - overflow,
+        );
+      }
+    }
+    return sorted.map((label) => ({ ...label, side }));
+  }
+
+  function topicLabelX(side, y, cx, cy) {
+    const distanceFromCenter = Math.min(Math.abs(y - cy) / 150, 1);
+    if (side === "left") {
+      return Number((190 + distanceFromCenter * 58).toFixed(3));
+    }
+    return Number((548 + distanceFromCenter * 10).toFixed(3));
+  }
+
+  function topicCalloutText(label, x, y, anchor) {
+    const lines = wrapSvgLabel(label.name, 35);
+    const lineHeight = 9.5;
+    const startY = y - (lines.length - 1) * lineHeight - 5;
+    const nameLines = lines
+      .map(
+        (line, index) => `
+          <tspan class="topic-callout-name" x="${x}" dy="${index === 0 ? 0 : lineHeight}" fill="${label.color}">${escapeHtml(line)}</tspan>
+        `,
+      )
+      .join("");
+    return `
+      <text class="topic-callout-text" x="${x}" y="${startY}" text-anchor="${anchor}">
+        ${nameLines}
+        <tspan class="topic-callout-percent" x="${x}" dy="13">${escapeHtml(label.percent)}%</tspan>
+      </text>
+    `;
+  }
+
+  function wrapSvgLabel(text, maxLength) {
+    const words = String(text || "").split(/\s+/).filter(Boolean);
+    const lines = [];
+    let current = "";
+    words.forEach((word) => {
+      const next = current ? `${current} ${word}` : word;
+      if (next.length > maxLength && current) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = next;
+      }
+    });
+    if (current) lines.push(current);
+    return lines.slice(0, 3);
   }
 
   function ringPath(
@@ -391,7 +482,7 @@
     const dataAttrs = Object.entries(data)
       .map(([key, value]) => `data-${key}="${escapeHtml(value)}"`)
       .join(" ");
-    const interactiveAttrs = data.topic
+    const interactiveAttrs = data.subtopic
       ? `role="button" tabindex="0" aria-label="${escapeHtml(label)}"`
       : "";
     return `<path class="${escapeHtml(className)}" d="${d}" fill="${fill}" stroke="rgba(255,252,246,0.86)" stroke-width="1.5" ${interactiveAttrs} ${dataAttrs}><title>${escapeHtml(label)}</title></path>`;
@@ -405,30 +496,19 @@
       $$(".donut-segment.active", chart).forEach((item) => item.classList.remove("active"));
       segment.classList.add("active");
       const percentWithinTopic = segment.dataset.within || "";
-      const isTopic = segment.dataset.segment === "topic";
       popover.hidden = false;
-      if (isTopic) {
-        popover.innerHTML = `
-          <span class="popover-kicker">Main topic</span>
-          <span class="popover-label">${escapeHtml(segment.dataset.topic || "")}</span>
-          <small>${formatNumber(Number(segment.dataset.count || 0))} items · ${escapeHtml(
-            segment.dataset.percent || "0.00",
-          )}% of all questions</small>
-        `;
-      } else {
-        popover.innerHTML = `
-          <span class="popover-kicker">${escapeHtml(segment.dataset.topic || "")}</span>
-          <span class="popover-label">${escapeHtml(segment.dataset.subtopic || "")}</span>
-          <small>${formatNumber(Number(segment.dataset.count || 0))} items · ${escapeHtml(segment.dataset.percent || "0.00")}% of all questions${
-            percentWithinTopic
-              ? ` · ${escapeHtml(percentWithinTopic)}% within topic`
-              : ""
-          }</small>
-        `;
-      }
+      popover.innerHTML = `
+        <span class="popover-kicker">${escapeHtml(segment.dataset.topic || "")}</span>
+        <span class="popover-label">${escapeHtml(segment.dataset.subtopic || "")}</span>
+        <small>${formatNumber(Number(segment.dataset.count || 0))} items · ${escapeHtml(segment.dataset.percent || "0.00")}% of all questions${
+          percentWithinTopic
+            ? ` · ${escapeHtml(percentWithinTopic)}% within topic`
+            : ""
+        }</small>
+      `;
     };
 
-    $$(".donut-segment[data-topic]", chart).forEach((segment) => {
+    $$(".outer-segment[data-subtopic]", chart).forEach((segment) => {
       segment.addEventListener("click", (event) => {
         event.stopPropagation();
         show(segment);
@@ -442,7 +522,7 @@
     });
 
     chart.addEventListener("click", (event) => {
-      if (event.target.closest(".donut-segment[data-topic]")) return;
+      if (event.target.closest(".outer-segment[data-subtopic]")) return;
       popover.hidden = true;
       $$(".donut-segment.active", chart).forEach((item) => item.classList.remove("active"));
     });

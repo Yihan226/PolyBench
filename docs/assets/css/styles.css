@@ -23,6 +23,7 @@
   --rose: var(--morandi-rose);
   --shadow: 0 24px 70px rgba(34, 31, 27, 0.14);
   --shadow-soft: 0 10px 30px rgba(34, 31, 27, 0.09);
+  --content-width: 1120px;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
@@ -83,7 +84,7 @@ img {
   justify-content: space-between;
   gap: 24px;
   min-height: 68px;
-  padding: 14px clamp(18px, 5vw, 64px);
+  padding: 14px clamp(28px, 7vw, 96px);
   background: rgba(255, 255, 255, 0.86);
   border-bottom: 1px solid var(--line);
   box-shadow: 0 8px 28px rgba(18, 24, 38, 0.06);
@@ -143,7 +144,9 @@ img {
   grid-template-columns: minmax(0, 1fr);
   gap: clamp(28px, 5vw, 72px);
   align-items: center;
-  padding: clamp(44px, 7vw, 78px) clamp(18px, 5vw, 64px) clamp(32px, 5vw, 56px);
+  width: min(100%, var(--content-width));
+  margin-inline: auto;
+  padding: clamp(44px, 7vw, 78px) clamp(32px, 7vw, 76px) clamp(32px, 5vw, 56px);
   border-bottom: 1px solid var(--line);
   background: transparent;
 }
@@ -312,7 +315,9 @@ h3 {
 
 .metric-band,
 .section-wrap {
-  padding: clamp(28px, 5vw, 56px) clamp(18px, 5vw, 64px);
+  width: min(100%, var(--content-width));
+  margin-inline: auto;
+  padding: clamp(28px, 5vw, 56px) clamp(32px, 7vw, 76px);
 }
 
 .metric-grid {
@@ -487,11 +492,13 @@ textarea:focus {
 .detail-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
   gap: 16px;
   margin-top: 16px;
 }
 
 .analysis-panel {
+  width: min(100%, 960px);
   padding: 18px;
   box-shadow: var(--shadow-soft);
 }
@@ -549,20 +556,21 @@ textarea:focus {
 
 .donut-layout {
   display: grid;
-  grid-template-columns: minmax(280px, 0.85fr) minmax(280px, 1fr);
-  gap: clamp(18px, 4vw, 36px);
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: 0;
 }
 
 .donut-chart {
   position: relative;
   display: grid;
   place-items: center;
-  min-height: 360px;
+  width: 100%;
+  min-height: clamp(360px, 48vw, 560px);
 }
 
 .topic-donut-svg {
-  width: min(100%, 430px);
+  width: min(100%, 900px);
   height: auto;
   overflow: visible;
   filter: drop-shadow(0 18px 26px rgba(18, 24, 38, 0.12));
@@ -588,6 +596,36 @@ textarea:focus {
   outline: none;
   opacity: 0.84;
   filter: brightness(1.08);
+}
+
+.topic-callout-line {
+  fill: none;
+  stroke-width: 1.45;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.72;
+}
+
+.topic-callout-dot {
+  stroke: none;
+  opacity: 1;
+  filter: drop-shadow(0 2px 3px rgba(18, 24, 38, 0.3));
+}
+
+.topic-callout-text {
+  fill: var(--ink);
+  font-size: 0.64rem;
+  font-weight: 560;
+  line-height: 1.1;
+}
+
+.topic-callout-name {
+  font-weight: 620;
+}
+
+.topic-callout-percent {
+  fill: var(--muted);
+  font-weight: 520;
 }
 
 .subtopic-popover {
@@ -645,7 +683,7 @@ textarea:focus {
 }
 
 .donut-legend {
-  display: grid;
+  display: none;
   gap: 9px;
 }
 
@@ -689,8 +727,9 @@ textarea:focus {
 
 .ability-layout {
   display: grid;
-  grid-template-columns: minmax(260px, 0.82fr) minmax(320px, 1.18fr);
-  gap: clamp(18px, 4vw, 34px);
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  gap: 16px;
   align-items: start;
 }
 
@@ -904,7 +943,9 @@ textarea:focus {
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  padding: 22px clamp(18px, 5vw, 64px);
+  width: min(100%, var(--content-width));
+  margin-inline: auto;
+  padding: 22px clamp(32px, 7vw, 76px);
   border-top: 1px solid var(--line);
   color: var(--muted);
   font-size: 0.9rem;
@@ -1307,9 +1348,7 @@ code {
 
   .metric-grid,
   .dataset-grid,
-  .topic-cloud,
-  .donut-layout,
-  .ability-layout {
+  .topic-cloud {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
